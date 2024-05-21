@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     # app install
     'accounts',
     'articles',
+    'voiceapp',
 ]
 
 MIDDLEWARE = [

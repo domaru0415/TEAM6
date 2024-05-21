@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Voice Recognition</title>
+</head>
+<body>
+    <h1>Voice Recognition</h1>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="audio_file" accept="audio/*">
+        <button type="submit">Upload and Recognize</button>
+    </form>
+</body>
+</html>
