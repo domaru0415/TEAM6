@@ -1,55 +1,47 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>음성 검색</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech Recognition</title>
 </head>
 <body>
-    <h1>음성 검색</h1>
-    <button id="start-recording">검색</button>
-    <p id="result"></p>
+    <h1>Speech Recognition</h1>
+    <button id="startButton">Start Recording</button>
+    <button id="stopButton">Stop Recording</button>
+    <div id="results"></div>
 
     <script>
-        const startRecordingButton = document.getElementById('start-recording');
-        const resultElement = document.getElementById('result');
-        
-        let mediaRecorder;
-        let audioChunks = [];
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const resultsDiv = document.getElementById('results');
 
-        startRecordingButton.addEventListener('click', async () => {
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        let recognition = new webkitSpeechRecognition(); // Chrome 브라우저에서 작동하는 경우
 
-                mediaRecorder.ondataavailable = event => {
-                    audioChunks.push(event.data);
-                };
+        recognition.lang = 'en-US';
 
-                mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    const formData = new FormData();
-                    formData.append('audio', audioBlob, 'recording.webm');
-                    
-                    const response = await fetch('/recognize/', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    const data = await response.json();
-                    if (data.text) {
-                        resultElement.innerText = data.text;
-                    } else {
-                        resultElement.innerText = data.error;
-                    }
-                };
-
-                mediaRecorder.start();
-                setTimeout(() => {
-                    mediaRecorder.stop();
-                }, 5000); // 5초간 녹음
-            } else {
-                resultElement.innerText = '음성 녹음을 지원하지 않는 브라우저입니다.';
-            }
+        startButton.addEventListener('click', () => {
+            recognition.start();
         });
+
+        stopButton.addEventListener('click', () => {
+            recognition.stop();
+        });
+
+        recognition.onresult = (event) => {
+            const result = event.results[0][0].transcript;
+            resultsDiv.innerHTML = result;
+
+            // 서버로 전송하는 코드 작성
+            fetch('/recognize/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ text: result })
+            });
+        };
     </script>
 </body>
 </html>

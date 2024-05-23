@@ -1,7 +1,6 @@
 from django.urls import path
-from . import views
+from .views import recognize
 
 urlpatterns = [
-    path('', views.index, name='index'),
-    path('recognize/', views.speech_to_text, name='recognize_speech'),
+    path('recognize/', recognize, name='recognize'),
 ]
