@@ -1,30 +1,34 @@
-# voiceapp/views.py
-import speech_recognition as sr
+from django.http import JsonResponse
 from django.shortcuts import render
-from .models import SpeechResult
+from django.views.decorators.csrf import csrf_exempt
+import speech_recognition as sr
+from pydub import AudioSegment
+import io
 
-def recognize_speech(request):
-    if request.method == 'POST' and 'audio_file' in request.FILES:
-        audio_file = request.FILES['audio_file']
+@csrf_exempt
+def speech_to_text(request):
+    if request.method == 'POST':
         recognizer = sr.Recognizer()
+        audio_file = request.FILES['audio']
         
-        # Save the audio file
-        speech_result = SpeechResult(audio_file=audio_file)
-        speech_result.save()
+        # 오디오 파일을 WAV 형식으로 변환
+        audio = AudioSegment.from_file(audio_file, format="webm")
+        wav_io = io.BytesIO()
+        audio.export(wav_io, format="wav")
+        wav_io.seek(0)
+        
+        with sr.AudioFile(wav_io) as source:
+            audio = recognizer.record(source)
+        
+        try:
+            text = recognizer.recognize_google(audio, language="ko-KR")
+            return JsonResponse({'text': text})
+        except sr.UnknownValueError:
+            return JsonResponse({'error': 'Could not understand audio'})
+        except sr.RequestError as e:
+            return JsonResponse({'error': f'Service error: {e}'})
+    return JsonResponse({'error': 'Invalid request method'})
 
-        # Recognize speech using Google Web Speech API
-        audio_path = speech_result.audio_file.path
-        with sr.AudioFile(audio_path) as source:
-            audio_data = recognizer.record(source)
-            try:
-                text = recognizer.recognize_google(audio_data)
-                speech_result.recognized_text = text
-                speech_result.save()
-            except sr.UnknownValueError:
-                text = "Could not understand audio"
-            except sr.RequestError:
-                text = "Could not request results from Google Speech Recognition service"
+def index(request):
+    return render(request, 'index.html')
 
-        return render(request, 'voiceapp/recognize_result.html', {'text': text})
-
-    return render(request, 'voiceapp/recognize.html')

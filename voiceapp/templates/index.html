@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>음성 검색</title>
+</head>
+<body>
+    <h1>음성 검색</h1>
+    <button id="start-recording">검색</button>
+    <p id="result"></p>
+
+    <script>
+        const startRecordingButton = document.getElementById('start-recording');
+        const resultElement = document.getElementById('result');
+        
+        let mediaRecorder;
+        let audioChunks = [];
+
+        startRecordingButton.addEventListener('click', async () => {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const formData = new FormData();
+                    formData.append('audio', audioBlob, 'recording.webm');
+                    
+                    const response = await fetch('/recognize/', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    if (data.text) {
+                        resultElement.innerText = data.text;
+                    } else {
+                        resultElement.innerText = data.error;
+                    }
+                };
+
+                mediaRecorder.start();
+                setTimeout(() => {
+                    mediaRecorder.stop();
+                }, 5000); // 5초간 녹음
+            } else {
+                resultElement.innerText = '음성 녹음을 지원하지 않는 브라우저입니다.';
+            }
+        });
+    </script>
+</body>
+</html>

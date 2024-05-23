@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # system install
     'rest_framework_simplejwt.token_blacklist',
+    'rest_framework',
     # app install
     'accounts',
     'articles',
